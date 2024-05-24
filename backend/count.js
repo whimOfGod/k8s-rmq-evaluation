@@ -1,4 +1,4 @@
-import amqplib from 'amqplib'
+const amqplib = require('amqplib')
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost:5672'
 const QUEUE = process.env.QUEUE || 'count'

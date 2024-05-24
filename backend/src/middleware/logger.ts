@@ -20,7 +20,7 @@ const colorError = (value: string | Error) => {
   if (typeof value === 'string') {
     return chalk.bold.red(value)
   } else if (value instanceof Error) {
-    return chalk.bold.red(value.stack)
+    return chalk.bold.red(value.stack ||"Error")
   } else {
     return value
   }

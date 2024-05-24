@@ -12,51 +12,157 @@ Nous entrons désormais dans le vif du sujet,
 
 ### [ EXAMEN ] 
 
-1) Récupéreration du fichier kubeconfig.yml puis exportation de cette dernière
+### Contextualisation
 
-```bash
-        $env:KUBECONFIG="D:\CFA-INSTA-COURS\CODE\DEVOPSCRV\k8s-rmq-evaluation\kubeconfig.yml"
+Ce projet nous amène à mettre en œuvre une infrastructure complète en utilisant Docker et Kubernetes, incluant la création et déploiement de conteneurs pour un backend Node.js et une base de données PostgreSQL, ainsi que la configuration et l'utilisation d'un cluster RabbitMQ
 
-         # puis on vérifie si les données sont biens accessibles avec un :
+### A. connexion au serveur kubernetes à distance 
+
+1) Récupéreration du fichier kubeconfig.yml puis exportation de cette dernière 
+   nous allons par la suite nous connecter au serveur kubernetes à distance 
+
+```sh
+$env:KUBECONFIG="D:\CFA-INSTA-COURS\CODE\DEVOPSCRV\k8s-rmq-evaluation\kubeconfig.yml"
+```
+
+2) puis on vérifie si on reçoit bien les données/packets de la part de notre serveur, si notre serveur distant est accessibles avec un :
+
+```sh
         kubectl get nodes
 ```
 
 
+### B. Creation d'un namespace spécifique
 
-2) Création d'un namespace Pour éviter les collisions avec mes collègues étudiants, il est essentiel de créer un namespace spécifique.
+1) Création d'un namespace Pour éviter les collisions avec mes collègues étudiants, il est essentiel de créer un namespace spécifique.
 
-```bash
+```sh
         kubectl create namespace aaronkolins
 ```
-3) Nous construisons l'image de notre backend 
 
-```bash
-       cd k8s-rmq-evaluation/database
-       docker build -t aaronkolins77/backend:latest .
+2) Puis je vérifie que le namespace existe bel et bien
 
-        # puis nous faisons un push
-        docker push aaronkolins77/backend:latest
+
+
+### C. Dockerfile 
+
+1) Nous préparons nos dockefiles : du backend et de database
+
+2) constructions des images :
+
+- Création de Dockerfiles pour le backend Node.js et la base de données PostgreSQL.
+
+
+- nous construisons l'image de notre backend et pushons cette images avec les commandes suivantes
+
+```sh
+# on se dirige dans le bon répertoire
+    cd k8s-rmq-evaluation/backend
+
+
+# nous construisons l'image de notre docker avec un tag
+    docker build -t aaronkolins77/backend:v1 .
+
+# puis nous faisons un push
+    docker push aaronkolins77/backend:v1
+
 ```
 
-4) Nous passons ensuite au Déploiement des Services sur Kubernetes
+
+- nous construisons l'image de notre postgres(database) et pushons cette images avec les commandes suivantes
+
+```sh
+# on se dirige dans le bon répertoire
+    cd ..
+    cd k8s-rmq-evaluation/database
+
+
+# nous construisons l'image de notre docker avec un tag
+    docker build -t aaronkolins77/postgres:v1 .
+
+# puis nous faisons un push
+    docker push aaronkolins77/postgres:v1
+
+```
+
+### D. Configuration Kubernetes et déploiements
+
+ Nous procédons à la configuration et au Déploiement des Services sur Kubernetes
     
 ### Déploiement de RabbitMQ 
 
-pour ce faire nous allons créer notre fichier YAML :  rabbitmq-cluster.yml
+pour ce faire nous avons créé notre fichier YAML :  rabbitmq.yml
+
+- Nous Déployons un cluster RabbitMQ sur Kubernetes.
+
+- Configuration de RabbitMQ pour l'utilisation par l'application backend.
 
 ```sh
         # on applique
-       kubectl apply -f rabbitmq-cluster.yml
+       kubectl apply -f rabbitmq.yml
 
 ```
 
-### Déployer PostgreSQL
+### Déploiement de PostgreSQL
 
-pour ce faire nous allons créer notre fichier YAML :  postgres-deployment.yml   
+- pour ce faire nous allons créer notre fichier YAML :  postgres-deployment.yml
+
+- nous vérifions bien le nom de nos métadata: 
+    #### postgres-deployment
+- surtout le namespace 
+    #### aaronkolins
+- au niveau de l'image de notre conteneurs on vérifie bien à rajouté le login de notre docker en locale sinon nous aurons des problèmes d'accès au de droits
+    ### image: aaronkolins77/postgres:v1
+- puis le port etc
+- ainsi que la configuration de notre service
+
+
+- commande de déploiement :
+```sh
+# On se dirige dans le bon chemin sinon cela ne fonctionne pas 
+
+    kubectl apply -f postgres-deployment.yml
+```
+
+### Déploiement du backend
+
+- C'est à peu près le même processus
 
 ```sh
-kubectl apply -f postgres-deployment.yml
+    kubectl apply -f backend-deployment.yml
 ```
+
+### D. Débogage et Résolution des Problèmes :
+
+- Pour ^tre sûre et avancé dans nos implémentations , nous vérifions quand mêmes nos pods et nos services :
+
+
+```sh
+    kubectl get pods --namespace=aaronkolins
+
+    kubectl get services --namespace=aaronkolins
+
+    kubectl get deployments --namespace=aaronkolins
+```
+
+- On vérifie le statut de nos services s'il y'a une erreur on doit pouvoir consulter les logs et corriger cette erreur, cela peut être dû à une saturation de port, à l'inaccessibilité du serveur distant, à une mauvaise adresse que nous avons exposé
+
+- si tout nos pods sont opérationnelles 1/1 nous pouvons évoluer
+
+- on peut également consulter tous nos évènement avec  :
+
+```sh
+    kubectl get events --namespace=aaronkolins
+```
+
+- ou une erreur spécifique sur l'un de nos dépoiements avec cette commande, par exemple : 
+
+```sh
+
+kubectl logs backend-deployment-6cdc8554c5-vflgq --namespace=aaronkolins 
+```
+
+
 
 
 
