@@ -1,7 +1,7 @@
 ### [ KS8-RMQ-EVALUATION ] 
 
 
-Après avoir cloner le projet en locale, j'ai supprimé le dossier .GIT pour pouvoir refaire un : 
+Après avoir cloner le projet en locale, j'ai supprimé le dossier .GIT caché pour pouvoir refaire un : 
     [  git init  ]
 
 par la suite j'ai commit et push sur mon repository github
@@ -9,6 +9,8 @@ par la suite j'ai commit et push sur mon repository github
 
 
 Nous entrons désormais dans le vif du sujet,
+
+- un dossier : image est à disposition pour les illustrations et les preuves de test
 
 ### [ EXAMEN ] 
 
@@ -161,6 +163,79 @@ pour ce faire nous avons créé notre fichier YAML :  rabbitmq.yml
 
 kubectl logs backend-deployment-6cdc8554c5-vflgq --namespace=aaronkolins 
 ```
+
+### E. Ajout de l'autoscaler
+
+1) Partie Test avec le Compteur
+
+- c'est une partie importante et consiste à tester la communication et l'intégration des différents services déployés sur Kubernetes. Le test principal est réalisé à travers un script Node.js appelé count.js, qui sert de démonstration de l'utilisation et de l'intégration de RabbitMQ avec le backend et la base de données PostgreSQL
+
+### Communication entre Services :
+
+- Nous Vérifions à ce niveau que le backend peut se connecter à RabbitMQ et envoyer des messages à une file d'attente spécifique.
+
+
+2) Création d'un compteur
+
+```sh
+
+kubectl apply -f backend-autoscaler.yml
+
+```
+- On s'assure que RabbitMQ est correctement configuré pour recevoir et gérer les messages provenant du backend.
+
+```sh
+curl localhost:4040/count/create -X POST
+```
+
+3) puis nous Configurerons les variables d'environnement pour count.js et nous exécutons ce script dans un terminal bash pour éviter les erreurs sur pwshl :
+
+```bash
+
+    export RABBITMQ_URL=amqp://rabbitmq:5672
+    export QUEUE=count
+    export COUNTER=<UUID_FROM_PREVIOUS_STEP>
+    node count.js
+
+```
+
+- Nous Évaluons par par suite la capacité du système à gérer des charges de travail variables en utilisant un : 
+#### Horizontal Pod Autoscaler 
+pour le backend.
+
+- nous Observons le comportement de l'application sous différentes conditions de charge.
+
+### Les résultats attendus
+
+- Le server kubernetes distant a été fermé malheureseusemnt ahah je n'ai pas pu tout tester
+
+- cependant 
+Les logs du pod backend devraient afficher des messages indiquant qu'il tente de se connecter à RabbitMQ.
+Une fois connecté, des messages "send" devraient apparaître périodiquement, indiquant que des messages sont envoyés à la file d'attente.
+
+Messages dans RabbitMQ :
+
+on doit être en mesure de voir ces messages dans RabbitMQ via son interface de gestion (accessible via le port configuré).
+Les messages devraient contenir la valeur définie par COUNTER.
+
+- j'ai également oublié de spcifier que pour lancer notre application dans notre terminale nous exécutons : 
+
+```bash
+
+    yarn start 
+
+```
+on pourra consulter ainsi voir si notre application envoie bien les requ^tes et si par exemple on arrive pas à accéder au postgres nous aurions une trace de cette erreur dans nos logs 
+
+- également pour les tests il ne faut pas hésiter à supprimer ses images docker, deploiements et pods et refaire toute les commandes pour s'assurer que tout est ok, 
+
+- Il est vrai que cela peut être rédibitoire raison pour laquelle il est préférable de créer un test à exécuter à chaque pour tous les builds, déploiments et suppressions
+
+
+### Merci pour cet Examen superiche en technologie 
+
+
+
 
 
 
